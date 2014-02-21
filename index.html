@@ -33,7 +33,9 @@ function handleMessage(e) {
 	} else if (type == "preload") {
 		setupMediaPlayer(myobj.src);
 	} else if (type == "play") {
-		mediaElem.play();
+		setTimeout(function() {
+			mediaElem.play();
+		}, myobj.wait);
 	}
 }
 
