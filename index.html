@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>HackASong</title>
+<script src="mediaelement/mediaelement.min.js"></script>
+</head>
+<body>
+<div id="infobar">Loading...</div>
+<div>Works in Chrome, may work in Firefox. Uses HTML5 audio with m4a and mp3.</div>
+<audio id="audioplayer"></audio>
+<script type="text/javascript">
+"use strict";
+var ws;
+var statusBar;
+var mediaElem;
+function connect() {
+	console.log("connect");
+	ws = new WebSocket("ws://simpleproxy.herokuapp.com/");
+	ws.onmessage = handleMessage;
+	ws.onerror = handleClose;
+	ws.onclose = handleClose;
+}
+
+function handleMessage(e) {
+	var myobj = JSON.parse(e.data.toString());
+	console.log(myobj);
+	var type = myobj.type;
+	if (type == "ping") {
+		ws.send(JSON.stringify({
+			"type": "pong"
+		}));
+		updateLatencyDisplay(myobj);
+	} else if (type == "preload") {
+		setupMediaPlayer(myobj.src);
+	} else if (type == "play") {
+		mediaElem.play();
+	}
+}
+
+function updateLatencyDisplay(event) {
+	statusBar.textContent = "Users: " + event.users + " latency: " + event.latency + "ms";
+}
+
+function handleClose(e) {
+	if (ws == null) return;
+	console.log(e);
+	ws.close();
+	ws = null;
+	setTimeout(connect, 1000);
+}
+
+function setupMediaPlayer(src) {
+	if (mediaElem) {
+		mediaElem.src = src;
+		mediaElem.pause();
+		mediaElem.load();
+		return;
+	}
+	mediaElem = document.getElementById("audioplayer");
+	mediaElem.src = src;
+	mediaElem.load();
+	/*mediaElem = new MediaElement("audioplayer", {
+		"mode": "auto_plugin"
+	});*/
+}
+
+function setup() {
+	statusBar = document.getElementById("infobar");
+
+	connect();
+}
+
+function doPlay(src, pass) {
+	ws.send(JSON.stringify({
+		"type": "play",
+		"src": src,
+		"pass": pass
+	}));
+}
+window.onload = setup;
+</script>
+</body>
+</html>
